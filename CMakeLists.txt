@@ -1,20 +1,29 @@
-
 cmake_minimum_required(VERSION 3.18)
 
 project(low_precision_quantizer)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
-# set(CMAKE_CXX_COMPILER "/usr/bin/g++")
-set(CMAKE_CXX_COMPILER "/usr/local/opt/llvm/bin")
-set(CMAKE_CXX17_STANDARD_COMPILE_OPTION "-std=c++17")
-set(CMAKE_CXX17_EXTENSION_COMPILE_OPTION "-std=gnu++17")
+# set(CMAKE_CXX_COMPILER "/usr/local/opt/llvm/bin")
 
-set(SKIP_PERFORMANCE_COMPARISON ON)
+include_directories(".")
+include_directories(${CMAKE_BINARY_DIR})
+include_directories(dependencies)
 
-find_package(OpenMP)
+add_subdirectory(src)
+
+
+# Add source dependencies 
+# add_subdirectory(dependencies/pybind11 EXCLUDE_FROM_ALL)
+add_subdirectory(dependencies/googletest EXCLUDE_FROM_ALL)
+
+# set(SKP_PERFORMANCE_COMPARISON ON)
+# add_subdirectory(dependencies/cereal EXCLUDE_FROM_ALL)
+
+# Add OpenMP
+find_package(OpenMP REQUIRED)
 if(NOT OpenMP_FOUND)
-    message("OpenMP Not Found.")
+    message("OpenMP Not Found. Building the Package using LLVM's OpenMP.")
     set(LLVM_OPENMP_VERSION "13.0.1")
     set(LLVM_OPENMP_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/dependencies/openmp")
 
@@ -36,40 +45,35 @@ if(NOT OpenMP_FOUND)
             "${LLVM_OPENMP_SOURCE_DIR}"
         )
     endif()
-endif()
+    set(OPENMP_STANDALONE_BUILD ON)
+    add_subdirectory(${LLVM_OPENMP_SOURCE_DIR} EXCLUDE_FROM_ALL)
+    add_library(OpenMP::OpenMP_CXX ALIAS omp)
 
-## Add compiler flags that should be used 
-# - Wall : enable all warnings
-# - O3: enable all optimizations
-set(CMAKE_CXX_FLAGS "-O3 -Wall -fopenmp -std=c++17")
+endif(NOT OpenMP_FOUND)
 
+
+# Add compiler flags that should be used - Wall : enable all warnings - O3:
+# enable all optimizations
+set(CMAKE_CXX_FLAGS "-O3 -Wall")
 
 # Specify the non-header source files that should be compiled
-file(GLOB CPP_SOURCE 
-    "${PROJECT_SOURCE_DIR}/src/*.cc"
-    # "${PROJECT_SOURCE_DIR}/dependencies/cereal"
+file(GLOB CPP_SOURCE "${PROJECT_SOURCE_DIR}/src/*.cc"
+     # "${PROJECT_SOURCE_DIR}/dependencies/cereal"
 )
-
-# This is so we can use the include macro 
-include_directories(".")
-include_directories(${PROJECT_SOURCE_DIR}/src/*.cc)
-# include_directories(${PROJECT_SOURCE_DIR}/dependencies/cereal)
-
 # where to find header files
 include_directories(${PROJECT_SOURCE_DIR}/src)
 
-# Name of the resulting executable, and which source files to 
-# use as specified by the CPP_SOURCE variable
 add_executable(main ${CPP_SOURCE})
+
+set(LPQ_SOURCES
+    ${PROJECT_SOURCE_DIR}/src/LPQ.cc)
+add_library(lpq ${LPQ_SOURCES})
+
+target_link_libraries(lpq PUBLIC OpenMP::OpenMP_CXX)
+
 
 message("===============================================")
 message("\tProject Directory = ${PROJECT_SOURCE_DIR}")
-message("\tC++ Complier = ${CMAKE_CXX_COMPILER}")
+message("\tC++ Compiler = ${CMAKE_CXX_COMPILER}")
 message("\tSource Files = ${CPP_SOURCE}")
-
-
-# add_subdirectory(dependencies/cereal)
-
-# target_link_libraries(low_precision_quantization cereal::cereal)
-
 
