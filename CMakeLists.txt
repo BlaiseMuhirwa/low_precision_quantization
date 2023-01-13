@@ -1,10 +1,14 @@
 cmake_minimum_required(VERSION 3.18)
 
-project(low_precision_quantizer)
+project(low_precision_quantizer LANGUAGES CXX)
 
+set(CMAKE_C_STANDARD 17)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 # set(CMAKE_CXX_COMPILER "/usr/local/opt/llvm/bin")
+
+
+find_package(Python COMPONENTS Interpreter Development)
 
 include_directories(".")
 include_directories(${CMAKE_BINARY_DIR})
@@ -14,7 +18,7 @@ add_subdirectory(src)
 
 
 # Add source dependencies 
-# add_subdirectory(dependencies/pybind11 EXCLUDE_FROM_ALL)
+add_subdirectory(dependencies/pybind11 EXCLUDE_FROM_ALL)
 add_subdirectory(dependencies/googletest EXCLUDE_FROM_ALL)
 
 # set(SKP_PERFORMANCE_COMPARISON ON)
@@ -67,13 +71,22 @@ add_executable(main ${CPP_SOURCE})
 
 set(LPQ_SOURCES
     ${PROJECT_SOURCE_DIR}/src/LPQ.cc)
-add_library(lpq ${LPQ_SOURCES})
+add_library(lpq STATIC ${LPQ_SOURCES})
+set_target_properties(lpq PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 target_link_libraries(lpq PUBLIC OpenMP::OpenMP_CXX)
 
+pybind11_add_module(low_precision_quantizer ${PROJECT_SOURCE_DIR}/bindings/PythonLPQ.cc)
+target_link_libraries(low_precision_quantizer PRIVATE lpq)
 
-message("===============================================")
+
+
+message("===================================================")
 message("\tProject Directory = ${PROJECT_SOURCE_DIR}")
 message("\tC++ Compiler = ${CMAKE_CXX_COMPILER}")
-message("\tSource Files = ${CPP_SOURCE}")
+message("\tSource Files = ")
+foreach(SOURCE_FILE IN LISTS CPP_SOURCE)
+    message("\t ${SOURCE_FILE}")
+endforeach(SOURCE_FILE IN LISTS CPP_SOURCE)
+
 
