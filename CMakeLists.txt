@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.18)
+cmake_minimum_required(VERSION 3.4...3.18)
 
 project(low_precision_quantizer LANGUAGES CXX)
 
@@ -13,7 +13,6 @@ find_package(Python COMPONENTS Interpreter Development)
 include_directories(".")
 include_directories(${CMAKE_BINARY_DIR})
 include_directories(dependencies)
-
 add_subdirectory(src)
 
 
@@ -77,7 +76,7 @@ set_target_properties(lpq PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_link_libraries(lpq PUBLIC OpenMP::OpenMP_CXX)
 
 pybind11_add_module(low_precision_quantizer ${PROJECT_SOURCE_DIR}/bindings/PythonLPQ.cc)
-target_link_libraries(low_precision_quantizer PRIVATE lpq)
+target_link_libraries(low_precision_quantizer PUBLIC lpq)
 
 
 

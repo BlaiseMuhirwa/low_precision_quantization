@@ -9,8 +9,8 @@ namespace py = pybind11;
 using lpq::LowPrecisionQuantizer;
 
 PYBIND11_MODULE(low_precision_quantizer, m) {
-  py::class_<LowPrecisionQuantizer<int8_t>,
-             std::shared_ptr<LowPrecisionQuantizer<int8_t>>>(
+  py::class_<lpq::LowPrecisionQuantizer<int8_t>,
+             std::shared_ptr<lpq::LowPrecisionQuantizer<int8_t>>>(
       m, "LowPrecisionQuantizer")
       .def(py::init<>())
       .def("quantize_vectors", &LowPrecisionQuantizer<int8_t>::quantizeVectors,
