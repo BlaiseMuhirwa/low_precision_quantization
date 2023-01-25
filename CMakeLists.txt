@@ -70,13 +70,13 @@ add_executable(main ${CPP_SOURCE})
 
 set(LPQ_SOURCES
     ${PROJECT_SOURCE_DIR}/src/LPQ.cc)
-add_library(lpq STATIC ${LPQ_SOURCES})
-set_target_properties(lpq PROPERTIES POSITION_INDEPENDENT_CODE ON)
+add_library(_lpq STATIC ${LPQ_SOURCES})
+set_target_properties(_lpq PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
-target_link_libraries(lpq PUBLIC OpenMP::OpenMP_CXX)
+target_link_libraries(_lpq PUBLIC OpenMP::OpenMP_CXX)
 
-pybind11_add_module(low_precision_quantizer ${PROJECT_SOURCE_DIR}/bindings/PythonLPQ.cc)
-target_link_libraries(low_precision_quantizer PUBLIC lpq)
+pybind11_add_module(lpq ${PROJECT_SOURCE_DIR}/bindings/PythonLPQ.cc)
+target_link_libraries(lpq PUBLIC _lpq)
 
 
 

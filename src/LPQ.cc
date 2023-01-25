@@ -20,20 +20,19 @@ LowPrecisionQuantizer<PRECISION_TYPE>::quantizeVectors(
   }
   std::vector<std::vector<PRECISION_TYPE>> quantized_vectors;
 
-#pragma omp parallel for default(none) shared(vectors, quantized_vectors)
+// #pragma omp parallel for default(none) shared(vectors, quantized_vectors)
   for (const auto &vector : vectors) {
-    auto [mean, stddev] = computeVectorWiseStatistics(vector);
-
     std::vector<PRECISION_TYPE> quantized_vector;
+    auto [mean, stddev] = computeVectorWiseStatistics(vector);
 
     for (uint32_t vec_index = 0; vec_index < vector.size(); vec_index++) {
       PRECISION_TYPE quantized_value =
           quantize(vector[vec_index], mean, stddev);
       quantized_vector.push_back(quantized_value);
     }
+
     quantized_vectors.emplace_back(std::move(quantized_vector));
   }
-
   return quantized_vectors;
 }
 

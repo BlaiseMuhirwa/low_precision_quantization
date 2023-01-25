@@ -50,7 +50,7 @@ class CMakeBuild(build_ext):
             f"-DPYTHON_EXECUTABLE={sys.executable}",
             f"-DCMAKE_BUILD_TYPE={cfg}",  # not used on MSVC, but no harm
         ]
-        build_args = ["-t", "low_precision_quantizer"]
+        build_args = ["-t", "lpq"]
         # Adding CMake arguments set as environment variable
         # (needed e.g. to build for ARM OSx on conda-forge)
         if "CMAKE_ARGS" in os.environ:
@@ -122,7 +122,7 @@ setup(
     author_email="blaisemunyampirwa@gmail.com",
     description="A Low precision quantization library",
     long_description="",
-    ext_modules=[CMakeExtension("low_precision_quantizer")],
+    ext_modules=[CMakeExtension("lpq")],
     cmdclass={"build_ext": CMakeBuild},
     zip_safe=False,
     extras_require={"test": ["pytest>=6.0"]},

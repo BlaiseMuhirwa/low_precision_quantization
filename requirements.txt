@@ -1,0 +1,8 @@
+cpython
+tables
+pandas 
+wheel 
+h5py 
+
+## Remember to pin gcc for Universe since it's been
+## unpinned while doing $ brew install hdf5
