@@ -10,6 +10,5 @@ build
 cmake_install.cmake 
 
 # Python wheels and experimental stuff
-python_scripts
 lpq.egg-info 
 dist 
