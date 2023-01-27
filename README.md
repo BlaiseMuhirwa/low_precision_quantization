@@ -23,13 +23,18 @@ $(lpq_venv) pip install -r requirements.txt
 
 Now to build the package, run the setup file, which will invoke `cmake` in order
 to create a wheel file for the package. 
-```(lpq_venv) python setup.py bdist_wheel ```
+```shell
+$(lpq_venv) python setup.py bdist_wheel 
+```
 
 This will create a wheel file in a `dist` folder. The file should be named something
 like `dist/lpq-0.0.1-cp310-cp310-macosx_12_0_arm64.whl`. The final step is to just
 install the library with pip. 
 
-```(lpq_venv) pip install dist/dist/lpq-0.0.1-cp310-cp310-macosx_12_0_arm64.whl```
+```shell
+$(lpq_venv) pip install dist/dist/lpq-0.0.1-cp310-cp310-macosx_12_0_arm64.whl
+
+```
 
 You can then import this library in a python script as follows:
 
