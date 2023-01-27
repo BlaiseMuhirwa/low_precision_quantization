@@ -1,9 +1,9 @@
 #include "LPQ.h"
+#include <algorithm>
 #include <cmath>
 #include <iostream>
 #include <math.h>
 #include <numeric>
-#include <algorithm>
 
 namespace lpq {
 
@@ -21,7 +21,7 @@ LowPrecisionQuantizer<PRECISION_TYPE>::quantizeVectors(
   }
   std::vector<std::vector<PRECISION_TYPE>> quantized_vectors;
 
-// #pragma omp parallel for default(none) shared(vectors, quantized_vectors)
+  // #pragma omp parallel for default(none) shared(vectors, quantized_vectors)
   for (const auto &vector : vectors) {
     std::vector<PRECISION_TYPE> quantized_vector;
     auto [mean, stddev] = computeVectorWiseStatistics(vector);
