@@ -9,25 +9,38 @@ namespace lpq::python {
 namespace py = pybind11;
 
 using lpq::LowPrecisionQuantizer;
-using InputVectors = std::vector<std::vector<float>>;
 
-PYBIND11_MODULE(lpq, m) {
+PYBIND11_MODULE(lpq, module) {
+
+  // TODO: Refactor the bindigs using a templated function to avoid
+  //  having to repeat the exact same code twice.
+
   py::class_<lpq::LowPrecisionQuantizer<int8_t>,
              std::shared_ptr<lpq::LowPrecisionQuantizer<int8_t>>>(
-      m, "LowPrecisionQuantizer")
-      .def(py::init<>())
+      module, "LowPrecisionQuantizerInt8")
+      .def(py::init<>(), "Initializes a low-precision quantizer (int8) object.")
       .def("quantize_vectors", &LowPrecisionQuantizer<int8_t>::quantizeVectors,
-           py::arg("vectors"))
-      .def(
-          "quantize_numpy",
-          [](LowPrecisionQuantizer<int8_t> &self, InputVectors &numpy_vectors) {
-            std::vector<std::vector<int8_t>> quantized_vectors =
-                self.quantizeVectors(numpy_vectors);
-            py::object output = py::cast(quantized_vectors);
-            return output;
-          })
+           py::arg("vectors"),
+           "Quantizes input vectors based on the low precision quantization "
+           "rule.")
+
       .def_property_readonly("bit_width",
-                             &LowPrecisionQuantizer<int8_t>::getBitWidth);
+                             &LowPrecisionQuantizer<int8_t>::getBitWidth,
+                             "Gets the bit width used by the quantizer");
+
+  py::class_<lpq::LowPrecisionQuantizer<int16_t>,
+             std::shared_ptr<lpq::LowPrecisionQuantizer<int16_t>>>(
+      module, "LowPrecisionQuantizerInt16")
+      .def(py::init<>(),
+           "Initializes a low-precision quantizer (int16) object.")
+      .def("quantize_vectors", &LowPrecisionQuantizer<int16_t>::quantizeVectors,
+           py::arg("vectors"),
+           "Quantizes input vectors based on the low precision quantization "
+           "rule.")
+
+      .def_property_readonly("bit_width",
+                             &LowPrecisionQuantizer<int16_t>::getBitWidth,
+                             "Gets the bit width used by the quantizer");
 }
 
 } // namespace lpq::python
