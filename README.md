@@ -9,7 +9,10 @@ above installed.
 ## Building the Package 
 In order to build this package, first clone this repository with the 
 available submodules
-`$ git clone https://github.com/BlaiseMuhirwa/low_precision_quantization.git --recurse-submodules`
+
+```shell
+$ git clone https://github.com/BlaiseMuhirwa/low_precision_quantization.git --recurse-submodules
+```
 
 Open the `low_precision_quantization` folder and install the necessary 
 Python libraries via `pip`. I recommend first creating a virtual environment.
@@ -41,7 +44,7 @@ You can then import this library in a python script as follows:
 ```shell 
 import lpq
 
-quantizer = lpq.LowPrecisionQuantizer()
+quantizer = lpq.LowPrecisionQuantizerInt8()
 help(quantizer)
 
 ```
