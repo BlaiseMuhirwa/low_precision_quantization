@@ -2,9 +2,6 @@
 
 namespace lpq {
 
-enum DistanceMetric {
-  Euclidean,
-  InnerProduct
-};
+enum DistanceMetric { Euclidean, InnerProduct };
 
-} //namespace lpq
+} // namespace lpq

@@ -30,19 +30,31 @@ def set_tracking_uri(uri):
 
 
 def log_mlflow_run(
-    dataset, algorithm, querying_time, num_test_queries, recall, indexing_time=None
+    dataset,
+    run_name,
+    algorithm,
+    querying_time,
+    num_training_queries,
+    num_test_queries,
+    recall,
+    file,
+    indexing_time=None,
 ):
 
     if not mlflow.is_tracking_uri_set():
         raise ValueError("mlflow tracking uri must first be set.")
 
-    with mlflow.start_run(tags={"dataset": dataset, "algorithm": algorithm}):
+    with mlflow.start_run(
+        run_name=run_name, tags={"dataset": dataset, "algorithm": algorithm}
+    ):
         _log_machine_info()
         mlflow.log_param("indexing_time", indexing_time)
         mlflow.log_param("querying_time", querying_time)
+        mlflow.log_param("indexed_query_count", num_training_queries)
         mlflow.log_param("num_queries", num_test_queries)
         mlflow.log_param("queries_per_second", num_test_queries / querying_time)
         mlflow.log_param("recall", recall)
+        mlflow.log_artifact("file", file)
 
 
 def get_ann_benchmark_dataset(dataset_name):
