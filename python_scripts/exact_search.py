@@ -1,5 +1,4 @@
 import mlflow
-import logging
 import faiss
 import argparse
 import time
@@ -10,15 +9,16 @@ from utils import (
     log_mlflow_run,
     quantize_dataset,
     compute_recall,
+    setup_mlflow_auth,
 )
 
-DATASETS = {
+DATASETS = [
     "glove-100-angular",
     "sift-128-euclidean",
     "gist-960-euclidean",
     "glove-25-angular",
     "deep-image-96-angular",
-}
+]
 
 
 def create_faiss_index(distance_metric, dim=None):
@@ -52,10 +52,10 @@ def train_and_evaluate(
 
     if dataset == "deep-image-96-angular":
         distance_metric = dataset_context[3]
-        dimension = dataset_context[2]
+        dimension = int(dataset_context[2])
     else:
         distance_metric = dataset_context[2]
-        dimension = dataset_context[1]
+        dimension = int(dataset_context[1])
 
     if distance_metric == "angular":
         # For angular we need to normalize.
@@ -102,6 +102,7 @@ def train_and_evaluate(
 
 def run_experiment(dataset_name, mlflow_uri, quantize):
     set_tracking_uri(uri=mlflow_uri)
+
     mlflow.set_experiment("Low Precision Quantization")
 
     train_and_evaluate(
@@ -117,10 +118,15 @@ def run_experiment(dataset_name, mlflow_uri, quantize):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--mlflow_uri", required=True, help="MLflow URI")
+    parser.add_argument("--username", required=True, help="MLflow username")
+    parser.add_argument("--password", required=True, help="MLflow password")
 
     args = parser.parse_args()
     mlflow_uri = args.mlflow_uri
+    mlflow_username = args.username
+    mlflow_password = args.password
 
+    setup_mlflow_auth(username=mlflow_username, password=mlflow_password)
     for dataset in DATASETS:
         run_experiment(dataset_name=dataset, mlflow_uri=mlflow_uri, quantize=False)
         run_experiment(dataset_name=dataset, mlflow_uri=mlflow_uri, quantize=True)
