@@ -15,10 +15,8 @@ public:
   explicit ExactSearchIndex(
       DistanceMetric metric = DistanceMetric::InnerProduct);
 
-    template<typename PRECISION_TYPE>
-    void addDataset(const std::vector<std::vector<PRECISION_TYPE>>& dataset);
-
-
+  template <typename PRECISION_TYPE>
+  void addDataset(const std::vector<std::vector<PRECISION_TYPE>> &dataset);
 }
 
 } // namespace lpq
