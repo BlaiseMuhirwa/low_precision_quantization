@@ -25,6 +25,11 @@ def _log_machine_info():
         mlflow.log_param(key, val)
 
 
+def setup_mlflow_auth(username, password):
+    os.environ["MLFLOW_TRACKING_USERNAME"] = username
+    os.environ["MLFLOW_TRACKING_PASSWORD"] = password
+
+
 def set_tracking_uri(uri):
     mlflow.set_tracking_uri(uri=uri)
 
@@ -37,13 +42,8 @@ def log_mlflow_run(
     num_training_queries,
     num_test_queries,
     recall,
-    file,
     indexing_time=None,
 ):
-
-    if not mlflow.is_tracking_uri_set():
-        raise ValueError("mlflow tracking uri must first be set.")
-
     with mlflow.start_run(
         run_name=run_name, tags={"dataset": dataset, "algorithm": algorithm}
     ):
@@ -52,9 +52,8 @@ def log_mlflow_run(
         mlflow.log_param("querying_time", querying_time)
         mlflow.log_param("indexed_query_count", num_training_queries)
         mlflow.log_param("num_queries", num_test_queries)
-        mlflow.log_param("queries_per_second", num_test_queries / querying_time)
-        mlflow.log_param("recall", recall)
-        mlflow.log_artifact("file", file)
+        mlflow.log_metric("queries_per_second", num_test_queries / querying_time)
+        mlflow.log_metric("recall", recall)
 
 
 def get_ann_benchmark_dataset(dataset_name):
