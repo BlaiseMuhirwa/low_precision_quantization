@@ -1,6 +1,7 @@
 #include "LPQ.h"
 #include <algorithm>
 #include <cmath>
+#include <cstdint>
 #include <iostream>
 #include <math.h>
 #include <numeric>
@@ -28,7 +29,7 @@ LowPrecisionQuantizer<PRECISION_TYPE>::quantizeVectors(
 
     for (uint32_t vec_index = 0; vec_index < vector.size(); vec_index++) {
       PRECISION_TYPE quantized_value =
-          quantize(vector[vec_index], mean, stddev);
+          quantize_simple(vector[vec_index], mean, stddev);
       quantized_vector.push_back(quantized_value);
     }
 
@@ -54,6 +55,19 @@ lpq::LowPrecisionQuantizer<PRECISION_TYPE>::computeVectorWiseStatistics(
   variance /= (vector.size() - 1);
   float stddev = sqrt(variance);
   return std::make_tuple(mean, stddev);
+}
+
+template <typename PRECISION_TYPE>
+PRECISION_TYPE lpq::LowPrecisionQuantizer<PRECISION_TYPE>::quantize_simple(
+    float value, float mean, float standard_deviation) {
+  (void)mean;
+  auto range = 4 * standard_deviation;
+
+  auto s = range / ((1 << _bit_width) - 1);
+  auto quantization = std::floor(value / s);
+  PRECISION_TYPE output = s * quantization;
+
+  return output;
 }
 
 template <typename PRECISION_TYPE>
@@ -85,7 +99,7 @@ lpq::LowPrecisionQuantizer<PRECISION_TYPE>::quantize(float value, float mean,
 }
 
 // Template specialization for int8 and int16 types
-template class LowPrecisionQuantizer<int8_t>;
-template class LowPrecisionQuantizer<int16_t>;
+template class LowPrecisionQuantizer<int_least8_t>;
+template class LowPrecisionQuantizer<int_least16_t>;
 
 } // namespace lpq
