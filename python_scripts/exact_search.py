@@ -95,23 +95,24 @@ def train_and_evaluate(
             num_training_queries=index.ntotal,
             num_test_queries=queries.size,
             recall=recall,
+            file=__file__,
             indexing_time=indexing_time,
         )
 
 
 def run_experiment(dataset_name, mlflow_uri, quantize):
-    # set_tracking_uri(uri=mlflow_uri)
+    set_tracking_uri(uri=mlflow_uri)
 
-    # mlflow.set_experiment("Low Precision Quantization")
+    mlflow.set_experiment("Low Precision Quantization")
 
     train_and_evaluate(
         dataset=dataset_name,
         quantize=quantize,
         index_needs_training=True,
-        test_run=True,
+        test_run=False,
     )
 
-    # mlflow.end_run()
+    mlflow.end_run()
 
 
 if __name__ == "__main__":
@@ -126,6 +127,6 @@ if __name__ == "__main__":
     mlflow_password = args.password
 
     setup_mlflow_auth(username=mlflow_username, password=mlflow_password)
-    for dataset in ["glove-100-angular"]:
+    for dataset in DATASETS:
         run_experiment(dataset_name=dataset, mlflow_uri=mlflow_uri, quantize=False)
         run_experiment(dataset_name=dataset, mlflow_uri=mlflow_uri, quantize=True)
