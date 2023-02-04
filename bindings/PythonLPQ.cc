@@ -15,15 +15,22 @@ using lpq::index::ExactSearchIndex;
 void defineIndexSubmodule(py::module_ &index_submodule) {
   py::class_<ExactSearchIndex<int_least8_t>,
              std::shared_ptr<ExactSearchIndex<int_least8_t>>>(
-      index_submodule, "ExactSearchIndex");
+      index_submodule, "ExactSearchIndex")
+      .def(py::init<std::string>(), "Initializes an exact search index")
+      .def("add", &ExactSearchIndex<int_least8_t>::addDataset,
+           py::arg("dataset"), "Indexes the given dataset")
+      .def("search", &ExactSearchIndex<int_least8_t>::search,
+           py::arg("queries"), py::arg("top_k"),
+           "Searches exhaustively for the top k closest vectors to the given "
+           "queries");
 }
 
-void defineQuantizationSubmodule(py::module_ &quantization_submodule) {
+void defineQuantizationSubmodule(py::module_ &quantizer_submodule) {
   // TODO: Refactor the bindigs using a templated function to avoid
   //  having to repeat the exact same code twice.
   py::class_<LowPrecisionQuantizer<int_least8_t>,
              std::shared_ptr<LowPrecisionQuantizer<int_least8_t>>>(
-      quantization_submodule, "LowPrecisionQuantizerInt8")
+      quantizer_submodule, "LowPrecisionQuantizerInt8")
       .def(py::init<>(), "Initializes a low-precision quantizer (int8) object.")
       .def("quantize_vectors",
            &LowPrecisionQuantizer<int_least8_t>::quantizeVectors,
@@ -37,7 +44,7 @@ void defineQuantizationSubmodule(py::module_ &quantization_submodule) {
 
   py::class_<LowPrecisionQuantizer<int_least16_t>,
              std::shared_ptr<LowPrecisionQuantizer<int_least16_t>>>(
-      quantization_submodule, "LowPrecisionQuantizerInt16")
+      quantizer_submodule, "LowPrecisionQuantizerInt16")
       .def(py::init<>(),
            "Initializes a low-precision quantizer (int16) object.")
       .def("quantize_vectors",
@@ -54,9 +61,9 @@ void defineQuantizationSubmodule(py::module_ &quantization_submodule) {
 PYBIND11_MODULE(lpq, module) {
 
   auto index_submodule = module.def_submodule("index");
-  auto quantization_submodule = module.def_submodule("quantization");
+  auto quantization_submodule = module.def_submodule("quantizer");
 
-  defineQuantizationSubmodule(quantization_submodule);
+  defineQuantizationSubmodule(quantizer_submodule);
   defineIndexSubmodule(index_submodule);
 }
 

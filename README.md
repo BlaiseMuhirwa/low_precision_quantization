@@ -42,9 +42,9 @@ $(lpq_venv) pip install dist/dist/lpq-0.0.1-cp310-cp310-macosx_12_0_arm64.whl
 You can then import this library in a python script as follows:
 
 ```shell 
-import lpq
+from lpq import quantizer
 
-quantizer = lpq.LowPrecisionQuantizerInt8()
+quantizer = quantizer.LowPrecisionQuantizerInt8()
 help(quantizer)
 
 ```
