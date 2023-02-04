@@ -1,6 +1,7 @@
 #include "LPQ.h"
 #include <algorithm>
 #include <cmath>
+#include <cstdint>
 #include <iostream>
 #include <math.h>
 #include <numeric>
@@ -85,7 +86,7 @@ lpq::LowPrecisionQuantizer<PRECISION_TYPE>::quantize(float value, float mean,
 }
 
 // Template specialization for int8 and int16 types
-template class LowPrecisionQuantizer<int8_t>;
-template class LowPrecisionQuantizer<int16_t>;
+template class LowPrecisionQuantizer<int_least8_t>;
+template class LowPrecisionQuantizer<int_least16_t>;
 
 } // namespace lpq
