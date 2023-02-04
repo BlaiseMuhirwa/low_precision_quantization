@@ -22,6 +22,10 @@ private:
   std::tuple<float, float>
   computeVectorWiseStatistics(const std::vector<float> &vector);
   PRECISION_TYPE quantize(float value, float mean, float standard_deviation);
+
+  // Alternative quantization strategy
+  PRECISION_TYPE quantize_simple(float value, float mean,
+                                 float standard_deviation);
   uint32_t _bit_width;
 };
 } // namespace lpq
