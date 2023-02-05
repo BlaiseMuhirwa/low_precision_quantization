@@ -15,12 +15,24 @@ using lpq::index::ExactSearchIndex;
 void defineIndexSubmodule(py::module_ &index_submodule) {
   py::class_<ExactSearchIndex<int_least8_t>,
              std::shared_ptr<ExactSearchIndex<int_least8_t>>>(
-      index_submodule, "ExactSearchIndex")
-      .def(py::init<std::string>(), "Initializes an exact search index")
+      index_submodule, "ExactSearchIndexInt8")
+      .def(py::init<std::string>(), py::arg("distance_metric"),
+           "Initializes an exact search index")
       .def("add", &ExactSearchIndex<int_least8_t>::addDataset,
            py::arg("dataset"), "Indexes the given dataset")
       .def("search", &ExactSearchIndex<int_least8_t>::search,
            py::arg("queries"), py::arg("top_k"),
+           "Searches exhaustively for the top k closest vectors to the given "
+           "queries");
+
+  py::class_<ExactSearchIndex<float>, std::shared_ptr<ExactSearchIndex<float>>>(
+      index_submodule, "ExactSearchIndexF")
+      .def(py::init<std::string>(), py::arg("distance_metric"),
+           "Initializes an exact search index")
+      .def("add", &ExactSearchIndex<float>::addDataset, py::arg("dataset"),
+           "Indexes the given dataset")
+      .def("search", &ExactSearchIndex<float>::search, py::arg("queries"),
+           py::arg("top_k"),
            "Searches exhaustively for the top k closest vectors to the given "
            "queries");
 }
@@ -61,7 +73,7 @@ void defineQuantizationSubmodule(py::module_ &quantizer_submodule) {
 PYBIND11_MODULE(lpq, module) {
 
   auto index_submodule = module.def_submodule("index");
-  auto quantization_submodule = module.def_submodule("quantizer");
+  auto quantizer_submodule = module.def_submodule("quantizer");
 
   defineQuantizationSubmodule(quantizer_submodule);
   defineIndexSubmodule(index_submodule);

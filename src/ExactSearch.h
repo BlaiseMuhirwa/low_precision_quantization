@@ -2,6 +2,8 @@
 
 #include <memory.h>
 #include <string>
+#include <tuple>
+#include <utility>
 #include <vector>
 
 namespace lpq::index {
@@ -11,17 +13,17 @@ namespace lpq::index {
  * exhaustive search to compute distances
  **/
 
-template <typename PRECISION_TYPE>
-class ExactSearchIndex
-    : public std::enable_shared_from_this<ExactSearchIndex<PRECISION_TYPE>> {
-
-  using MaxHeapElementType = std::pair<float, std::vector<PRECISION_TYPE>>;
-  using TopKType = std::vector<std::pair<float, std::vector<PRECISION_TYPE>>>;
+template <typename PRECISION_TYPE> class ExactSearchIndex {
 
 public:
   explicit ExactSearchIndex(const std::string &distance_metric)
       : _distance_metric(distance_metric) {}
 
+  /**
+   * Adds every vector to the index. Every vector in the dataset
+   * is assigned a unique ID. This assignment is sequential so
+   * that the first vector has ID 0 and so on.
+   **/
   void addDataset(const std::vector<std::vector<PRECISION_TYPE>> &dataset);
 
   /**
@@ -33,7 +35,8 @@ public:
    * the output vector will also be a vector (of size k) of vectors, each
    * of which has dim d.
    */
-  std::vector<std::vector<std::pair<float, std::vector<PRECISION_TYPE>>>>
+  std::tuple<std::vector<std::vector<float>>,
+             std::vector<std::vector<uint32_t>>>
   search(const std::vector<std::vector<PRECISION_TYPE>> &queries,
          uint32_t top_k);
 
@@ -42,14 +45,16 @@ private:
    * Computes the distance between the input query vector
    * and every other query in the index, and returns the top_k
    * closest queries based on the given distance metric and
-   * the corresponding distances in a sorted order.
+   * the corresponding distances in a sorted order. The output
+   * is returned as a tuple of the top k distances and top k
+   * vector ids.
    */
-  std::vector<std::pair<float, std::vector<PRECISION_TYPE>>>
+  std::tuple<std::vector<float>, std::vector<uint32_t>>
   getTopKClosestVectors(const std::vector<PRECISION_TYPE> &query_vector,
                         uint32_t top_k);
 
   std::string _distance_metric;
-  std::vector<std::vector<PRECISION_TYPE>> _index;
+  std::vector<std::pair<std::vector<PRECISION_TYPE>, uint32_t>> _index;
 };
 
 } // namespace lpq::index

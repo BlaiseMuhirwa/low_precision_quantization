@@ -1,9 +1,12 @@
 
+#include <cassert>
 #include <cstdint>
 #include <queue>
 #include <src/DistanceMetrics.h>
 #include <src/ExactSearch.h>
+#include <tuple>
 #include <utility>
+#include <iostream>
 
 namespace lpq::index {
 
@@ -11,32 +14,34 @@ template <typename PRECISION_TYPE>
 void ExactSearchIndex<PRECISION_TYPE>::addDataset(
     const std::vector<std::vector<PRECISION_TYPE>> &dataset) {
   assert(_index.size() == 0);
-  for (const auto &vector : dataset) {
-    _index.push_back(std::move(vector));
+  for (uint32_t index = 0; index < dataset.size(); index++) {
+    auto current_item = std::make_pair(std::move(dataset[index]), index);
+    _index.push_back(std::move(current_item));
   }
 }
 
 template <typename PRECISION_TYPE>
-std::vector<std::vector<std::pair<float, std::vector<PRECISION_TYPE>>>>
+std::tuple<std::vector<std::vector<float>>, std::vector<std::vector<uint32_t>>>
 ExactSearchIndex<PRECISION_TYPE>::search(
     const std::vector<std::vector<PRECISION_TYPE>> &queries, uint32_t top_k) {
-  std::vector<TopKType> output;
-  output.reserve(queries.size());
 
-#pragma omp parallel for default(none) shared(output, queries, top_k)
+  std::vector<std::vector<float>> distances(queries.size());
+  std::vector<std::vector<uint32_t>> ids(queries.size());
+
+#pragma omp parallel for default(none) shared(distances, ids, queries, top_k)
   for (uint32_t index = 0; index < queries.size(); index++) {
 
-    TopKType top_k_vectors = getTopKClosestVectors(
+    auto [top_k_distances, top_k_ids] = getTopKClosestVectors(
         /* query_vector=*/queries[index], /* top_k=*/top_k);
 
-    output[index] = std::move(top_k_vectors);
+    distances[index] = std::move(top_k_distances);
+    ids[index] = std::move(top_k_ids);
   }
-
-  return output;
+  return {distances, ids};
 }
 
 template <typename PRECISION_TYPE>
-std::vector<std::pair<float, std::vector<PRECISION_TYPE>>>
+std::tuple<std::vector<float>, std::vector<uint32_t>>
 ExactSearchIndex<PRECISION_TYPE>::getTopKClosestVectors(
     const std::vector<PRECISION_TYPE> &query_vector, uint32_t top_k) {
 
@@ -52,28 +57,37 @@ ExactSearchIndex<PRECISION_TYPE>::getTopKClosestVectors(
    * which takes O(n logk);
    */
 
-  std::priority_queue<MaxHeapElementType> max_heap;
+  std::priority_queue<std::pair<float, uint32_t>> max_heap;
   for (uint32_t vec_index = 0; vec_index < _index.size(); vec_index++) {
-    auto distance =
-        lpq::index::computeDistance(/* first_vector = */ query_vector,
-                                    /* second_vector = */ _index[vec_index],
-                                    /* metric = */ _distance_metric);
+    auto distance = lpq::index::computeDistance(
+        /* first_vector = */ query_vector,
+        /* second_vector = */ _index[vec_index].first,
+        /* metric = */ _distance_metric);
 
-    auto current_pair = std::make_pair(distance, _index[vec_index]);
+    auto current_pair = std::make_pair(distance, _index[vec_index].second);
     max_heap.push(current_pair);
 
     if (max_heap.size() > top_k) {
       max_heap.pop();
     }
   }
-  std::vector<std::pair<float, std::vector<PRECISION_TYPE>>> output;
+  std::vector<std::pair<float, uint32_t>> top_k_results;
   while (!max_heap.empty()) {
     auto pair = max_heap.top();
-    output.emplace_back(std::move(pair));
+    top_k_results.emplace_back(std::move(pair));
     max_heap.pop();
   }
-  std::sort(output.begin(), output.end());
-  return output;
+  std::sort(top_k_results.begin(), top_k_results.end());
+
+  std::vector<float> distances(top_k);
+  std::vector<uint32_t> ids(top_k);
+
+  for (uint32_t i = 0; i < top_k; i++) {
+    distances[i] = top_k_results[i].first;
+    ids[i] = top_k_results[i].second;
+  }
+
+  return {std::move(distances), std::move(ids)};
 }
 
 // Floating point based index used for baseline comparision

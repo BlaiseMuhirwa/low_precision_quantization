@@ -39,9 +39,9 @@ std::vector<std::vector<float>> getTestingVectors() {
     for (uint32_t i = 0; i < VECTOR_DIMENSION; i++) {
       float random_number = distribution(generator);
 
-      current_vector.push_back(random_number);
+      current_vector.emplace_back(random_number);
     }
-    output.push_back(std::move(current_vector));
+    output.emplace_back(std::move(current_vector));
   }
   return output;
 }
