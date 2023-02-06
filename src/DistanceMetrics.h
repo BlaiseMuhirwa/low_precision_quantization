@@ -38,10 +38,7 @@ static float angularDistance(const std::vector<PRECISION_TYPE> &first_vector,
   for (uint32_t i = 0; i < first_vector.size(); i++) {
     distance += first_vector[i] * second_vector[i];
   }
-  auto norm_first_vector = norm(first_vector);
-  auto norm_second_vector = norm(second_vector);
 
-  distance /= (norm_first_vector * norm_second_vector);
   return distance;
 }
 

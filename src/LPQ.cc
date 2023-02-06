@@ -29,7 +29,7 @@ LowPrecisionQuantizer<PRECISION_TYPE>::quantizeVectors(
 
     for (uint32_t vec_index = 0; vec_index < vector.size(); vec_index++) {
       PRECISION_TYPE quantized_value =
-          quantize_simple(vector[vec_index], mean, stddev);
+          quantize(vector[vec_index], mean, stddev);
       quantized_vector.push_back(quantized_value);
     }
 

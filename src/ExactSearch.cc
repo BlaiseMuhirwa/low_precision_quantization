@@ -1,12 +1,12 @@
 
 #include <cassert>
 #include <cstdint>
+#include <iostream>
 #include <queue>
 #include <src/DistanceMetrics.h>
 #include <src/ExactSearch.h>
 #include <tuple>
 #include <utility>
-#include <iostream>
 
 namespace lpq::index {
 
@@ -48,37 +48,67 @@ ExactSearchIndex<PRECISION_TYPE>::getTopKClosestVectors(
   /**
    * We use a priority queue. Every element in the queue
    * consists of a pair of the distance and the actual
-   * vector in the index. We use a max heap instead of min heap
-   * since the invariant here is that if any vector is not in the
-   * top k closest vectors, it will be removed from the heap at some
-   * point. But this means we have to sort the resulting output since
-   * the top will contain the k^th closest vector. The final sorting
-   * step takes O(klogk). So, the bottleneck is the pre-processing step
-   * which takes O(n logk);
+   * vector in the index. We use a max heap for the Euclidean distance
+   * metric instead of min heap since the invariant here is that if any
+   * vector is not in the top k closest vectors, it will be removed
+   * from the heap at some point. But this means we have to sort the
+   * resulting output since the top will contain the k^th closest vector.
+   * The final sorting step takes O(klogk). So, the bottleneck is the
+   * pre-processing step which takes O(n logk);
    */
+  std::vector<std::pair<float, uint32_t>> top_k_results;
+  if (_distance_metric == "angular") {
+    std::priority_queue<std::pair<float, uint32_t>,
+                        std::vector<std::pair<float, uint32_t>>,
+                        std::greater<std::pair<float, uint32_t>>>
+        heap;
+    for (uint32_t vec_index = 0; vec_index < _index.size(); vec_index++) {
+      auto distance = lpq::index::computeDistance(
+          /* first_vector = */ query_vector,
+          /* second_vector = */ _index[vec_index].first,
+          /* metric = */ _distance_metric);
 
-  std::priority_queue<std::pair<float, uint32_t>> max_heap;
-  for (uint32_t vec_index = 0; vec_index < _index.size(); vec_index++) {
-    auto distance = lpq::index::computeDistance(
-        /* first_vector = */ query_vector,
-        /* second_vector = */ _index[vec_index].first,
-        /* metric = */ _distance_metric);
+      auto current_pair = std::make_pair(distance, _index[vec_index].second);
+      heap.push(current_pair);
 
-    auto current_pair = std::make_pair(distance, _index[vec_index].second);
-    max_heap.push(current_pair);
+      if (heap.size() > top_k) {
+        heap.pop();
+      }
+      while (!heap.empty()) {
+        auto pair = heap.top();
+        top_k_results.emplace_back(std::move(pair));
+        heap.pop();
+      }
+    }
+  } else if (_distance_metric == "euclidean") {
+    std::priority_queue<std::pair<float, uint32_t>> heap;
+    for (uint32_t vec_index = 0; vec_index < _index.size(); vec_index++) {
+      auto distance = lpq::index::computeDistance(
+          /* first_vector = */ query_vector,
+          /* second_vector = */ _index[vec_index].first,
+          /* metric = */ _distance_metric);
 
-    if (max_heap.size() > top_k) {
-      max_heap.pop();
+      auto current_pair = std::make_pair(distance, _index[vec_index].second);
+      heap.push(current_pair);
+
+      if (heap.size() > top_k) {
+        heap.pop();
+      }
+
+      while (!heap.empty()) {
+        auto pair = heap.top();
+        top_k_results.emplace_back(std::move(pair));
+        heap.pop();
+      }
     }
   }
-  std::vector<std::pair<float, uint32_t>> top_k_results;
-  while (!max_heap.empty()) {
-    auto pair = max_heap.top();
-    top_k_results.emplace_back(std::move(pair));
-    max_heap.pop();
-  }
-  std::sort(top_k_results.begin(), top_k_results.end());
 
+  if (_distance_metric == "angular") {
+    std::sort(top_k_results.begin(), top_k_results.end(),
+              std::greater<std::pair<float, uint32_t>>());
+  } else if (_distance_metric == "euclidean") {
+    std::sort(top_k_results.begin(), top_k_results.end());
+  }
   std::vector<float> distances(top_k);
   std::vector<uint32_t> ids(top_k);
 
