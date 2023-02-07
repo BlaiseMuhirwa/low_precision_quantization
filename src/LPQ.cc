@@ -1,5 +1,6 @@
 #include "LPQ.h"
 #include <algorithm>
+#include <cassert>
 #include <cmath>
 #include <cstdint>
 #include <iostream>
@@ -22,51 +23,52 @@ LowPrecisionQuantizer<PRECISION_TYPE>::quantizeVectors(
   }
   std::vector<std::vector<PRECISION_TYPE>> quantized_vectors;
 
-  // #pragma omp parallel for default(none) shared(vectors, quantized_vectors)
-  for (const auto &vector : vectors) {
+  auto dataset_statistics = getDatasetStatistics(/* dataset = */ vectors);
+  assert(dataset_statistics.size() == vectors[0].size());
+
+#pragma omp parallel for default(none)                                         \
+    shared(vectors, quantized_vectors, dataset_statistics)
+  for (uint32_t vec_index = 0; vec_index < vectors.size(); vec_index++) {
+
     std::vector<PRECISION_TYPE> quantized_vector;
-    auto [mean, stddev] = computeVectorWiseStatistics(vector);
-
-    for (uint32_t vec_index = 0; vec_index < vector.size(); vec_index++) {
+    for (uint32_t dim_index = 0; dim_index < vectors[0].size(); dim_index++) {
+      auto [mean, stdev] = dataset_statistics[dim_index];
       PRECISION_TYPE quantized_value =
-          quantize(vector[vec_index], mean, stddev);
-      quantized_vector.push_back(quantized_value);
+          quantize(/* value = */ vectors[vec_index][dim_index],
+                   /* mean = */ mean, /* standard_deviation = */ stdev);
+      quantized_vector.emplace_back(quantized_value);
     }
-
     quantized_vectors.emplace_back(std::move(quantized_vector));
   }
   return quantized_vectors;
 }
 
-template <typename PRECISION_TYPE>
-std::tuple<float, float>
-lpq::LowPrecisionQuantizer<PRECISION_TYPE>::computeVectorWiseStatistics(
-    const std::vector<float> &vector) {
-  if (vector.size() == 0) {
+std::vector<std::tuple<float, float>>
+getDatasetStatistics(const std::vector<std::vector<float>> &dataset) {
+  if (dataset.size() == 0) {
     return {};
   }
-  auto const count = static_cast<float>(vector.size());
+  auto output_dimension = dataset[0].size();
+  auto dataset_size = dataset.size();
+  std::vector<std::tuple<float, float>> output(output_dimension);
 
-  float mean = std::accumulate(vector.begin(), vector.end(), 0.000000) / count;
-  float variance = 0.000000;
-  std::for_each(vector.begin(), vector.end(), [&variance, &mean](float item) {
-    variance += (item - mean) * (item - mean);
-  });
-  variance /= (vector.size() - 1);
-  float stddev = sqrt(variance);
-  return std::make_tuple(mean, stddev);
-}
-
-template <typename PRECISION_TYPE>
-PRECISION_TYPE lpq::LowPrecisionQuantizer<PRECISION_TYPE>::quantize_simple(
-    float value, float mean, float standard_deviation) {
-  (void)mean;
-  auto range = 4 * standard_deviation;
-
-  auto s = range / ((1 << _bit_width) - 1);
-  auto quantization = std::floor(value / s);
-  PRECISION_TYPE output = s * quantization;
-
+#pragma omp parallel for default(none)                                         \
+    shared(dataset, output_dimension, dataset_size)
+  for (uint32_t dim_index = 0; dim_index < output_dimension; dim_index++) {
+    float mean = 0.0000000;
+    float variance = 0.0000000;
+    for (uint32_t row_index = 0; row_index < dataset_size; row_index++) {
+      mean += dataset[row_index][dim_index];
+    }
+    mean /= dataset_size;
+    for (uint32_t row_index = 0; row_index < dataset_size; row_index++) {
+      variance += (dataset[row_index][dim_index] - mean) *
+                  (dataset[row_index][dim_index] - mean);
+    }
+    variance /= (dataset_size - 1);
+    auto current_statistics = std::make_tuple(mean, sqrt(variance));
+    output[dim_index] = current_statistics;
+  }
   return output;
 }
 

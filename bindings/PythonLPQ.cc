@@ -4,12 +4,14 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <src/LPQ.h>
+#include <src/NaiveQuantizer.h>
 
 namespace lpq::python {
 
 namespace py = pybind11;
 
 using lpq::LowPrecisionQuantizer;
+using lpq::NaiveQuantizer;
 using lpq::index::ExactSearchIndex;
 
 void defineIndexSubmodule(py::module_ &index_submodule) {
@@ -38,6 +40,19 @@ void defineIndexSubmodule(py::module_ &index_submodule) {
 }
 
 void defineQuantizationSubmodule(py::module_ &quantizer_submodule) {
+
+  py::class_<NaiveQuantizer<int_least8_t>,
+             std::shared_ptr<NaiveQuantizer<int_least8_t>>>(quantizer_submodule,
+                                                            "NaiveQuantizer")
+      .def(py::init<>(), "Initializes a naive quantizer (int8) object.")
+      .def("quantize_vectors", &NaiveQuantizer<int_least8_t>::quantizeVectors,
+           py::arg("vectors"),
+           "Quantizes input vectors based by clipping the bit width.")
+
+      .def_property_readonly("bit_width",
+                             &NaiveQuantizer<int_least8_t>::getBitWidth,
+                             "Gets the bit width used by the quantizer");
+
   // TODO: Refactor the bindigs using a templated function to avoid
   //  having to repeat the exact same code twice.
   py::class_<LowPrecisionQuantizer<int_least8_t>,
