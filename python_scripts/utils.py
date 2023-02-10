@@ -98,3 +98,14 @@ def compute_recall(computed_neighbors, true_neighbors):
         total += np.intersect1d(ground_truth_row, row).shape[0]
 
     return total / true_neighbors.size
+
+
+def get_principal_components(dataset, variance_percentage, dataset_name):
+    from sklearn.decomposition import PCA
+
+    pca = PCA(n_components=variance_percentage)
+    pca.fit(dataset)
+    print(
+        f"Principal Components: {pca.n_components_}, variance: {variance_percentage}, "
+        f"dataset_name: {dataset_name}"
+    )

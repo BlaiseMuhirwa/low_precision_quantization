@@ -4,6 +4,7 @@
 #include <cmath>
 #include <cstdint>
 #include <iostream>
+#include <limits>
 #include <math.h>
 #include <numeric>
 
@@ -23,28 +24,38 @@ LowPrecisionQuantizer<PRECISION_TYPE>::quantizeVectors(
   }
   std::vector<std::vector<PRECISION_TYPE>> quantized_vectors;
 
-  auto dataset_statistics = getDatasetStatistics(/* dataset = */ vectors);
-  assert(dataset_statistics.size() == vectors[0].size());
+  auto min_max_values = getMinMaxValues(/* dataset = */ vectors);
+  assert(min_max_values.size() == vectors[0].size());
+
+  std::vector<std::tuple<float, PRECISION_TYPE>> quantization_params;
+  for (auto [min, max] : min_max_values) {
+    quantization_params.emplace_back(
+        getQuantizationParams(/* min = */ min, /* max = */ max));
+  }
 
 #pragma omp parallel for default(none)                                         \
-    shared(vectors, quantized_vectors, dataset_statistics)
+    shared(vectors, quantization_params, quantized_vectors)
   for (uint32_t vec_index = 0; vec_index < vectors.size(); vec_index++) {
 
     std::vector<PRECISION_TYPE> quantized_vector;
-    for (uint32_t dim_index = 0; dim_index < vectors[0].size(); dim_index++) {
-      auto [mean, stdev] = dataset_statistics[dim_index];
-      PRECISION_TYPE quantized_value =
-          quantize(/* value = */ vectors[vec_index][dim_index],
-                   /* mean = */ mean, /* standard_deviation = */ stdev);
-      quantized_vector.emplace_back(quantized_value);
+#pragma omp critical
+    {
+      for (uint32_t dim_index = 0; dim_index < vectors[0].size(); dim_index++) {
+        auto [scale, zero_point] = quantization_params[dim_index];
+        PRECISION_TYPE quantized_value =
+            affine_quantize(/* value = */ vectors[vec_index][dim_index],
+                            /* scale = */ scale, /* zero_point = */ zero_point);
+        quantized_vector.emplace_back(quantized_value);
+      }
     }
     quantized_vectors.emplace_back(std::move(quantized_vector));
   }
   return quantized_vectors;
 }
-
+template <typename PRECISION_TYPE>
 std::vector<std::tuple<float, float>>
-getDatasetStatistics(const std::vector<std::vector<float>> &dataset) {
+LowPrecisionQuantizer<PRECISION_TYPE>::getDatasetStatistics(
+    const std::vector<std::vector<float>> &dataset) {
   if (dataset.size() == 0) {
     return {};
   }
@@ -53,7 +64,7 @@ getDatasetStatistics(const std::vector<std::vector<float>> &dataset) {
   std::vector<std::tuple<float, float>> output(output_dimension);
 
 #pragma omp parallel for default(none)                                         \
-    shared(dataset, output_dimension, dataset_size)
+    shared(dataset, output_dimension, dataset_size, output)
   for (uint32_t dim_index = 0; dim_index < output_dimension; dim_index++) {
     float mean = 0.0000000;
     float variance = 0.0000000;
@@ -73,9 +84,65 @@ getDatasetStatistics(const std::vector<std::vector<float>> &dataset) {
 }
 
 template <typename PRECISION_TYPE>
-PRECISION_TYPE
-lpq::LowPrecisionQuantizer<PRECISION_TYPE>::quantize(float value, float mean,
-                                                     float standard_deviation) {
+std::tuple<float, PRECISION_TYPE>
+LowPrecisionQuantizer<PRECISION_TYPE>::getQuantizationParams(float min,
+                                                             float max) {
+  min = std::min(min, 0.f);
+  max = std::max(max, 0.f);
+
+  PRECISION_TYPE qmin = (_bit_width == 8) ? -128 : -32768;
+  PRECISION_TYPE qmax = (_bit_width == 8) ? 127 : 32767;
+
+  const double scale = (max - min) / (qmax - qmin);
+
+  auto zero_point = qmin - std::round(min / scale);
+  if (zero_point < qmin) {
+    return {scale, qmin};
+  }
+  if (zero_point > qmax) {
+    return {scale, qmax};
+  }
+  return {scale, static_cast<PRECISION_TYPE>(zero_point)};
+}
+
+template <typename PRECISION_TYPE>
+std::vector<std::tuple<float, float>>
+LowPrecisionQuantizer<PRECISION_TYPE>::getMinMaxValues(
+    const std::vector<std::vector<float>> &dataset) {
+  if (dataset.size() == 0) {
+    return {};
+  }
+  std::vector<std::tuple<float, float>> output(dataset[0].size());
+
+#pragma omp parallel for default(none) shared(output, dataset)
+  for (uint32_t dim_index = 0; dim_index < dataset[0].size(); dim_index++) {
+    float min = dataset[0][dim_index];
+    float max = dataset[0][dim_index];
+#pragma omp critical
+    {
+      for (uint32_t row_index = 0; row_index < dataset.size(); row_index++) {
+        min = std::min(min, dataset[row_index][dim_index]);
+        max = std::max(max, dataset[row_index][dim_index]);
+      }
+    }
+    output[dim_index] = std::make_tuple(min, max);
+  }
+  return output;
+} // namespace lpq
+
+template <typename PRECISION_TYPE>
+PRECISION_TYPE lpq::LowPrecisionQuantizer<PRECISION_TYPE>::affine_quantize(
+    float value, float scale, PRECISION_TYPE zero_point) {
+  const auto transformed_value = zero_point + std::round(value / scale);
+
+  const auto clamped_value =
+      std::max(-128.f, std::min(127.f, transformed_value));
+  return static_cast<PRECISION_TYPE>(clamped_value);
+}
+
+template <typename PRECISION_TYPE>
+PRECISION_TYPE lpq::LowPrecisionQuantizer<PRECISION_TYPE>::lpq_quantize(
+    float value, float mean, float standard_deviation) {
   auto sb = mean - standard_deviation;
   auto se = mean + standard_deviation;
 
@@ -103,5 +170,6 @@ lpq::LowPrecisionQuantizer<PRECISION_TYPE>::quantize(float value, float mean,
 // Template specialization for int8 and int16 types
 template class LowPrecisionQuantizer<int_least8_t>;
 template class LowPrecisionQuantizer<int_least16_t>;
+template class LowPrecisionQuantizer<uint8_t>;
 
 } // namespace lpq

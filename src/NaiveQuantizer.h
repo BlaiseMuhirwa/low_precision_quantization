@@ -1,19 +1,17 @@
 #pragma once
 
+#include <cmath>
+#include <cstdint>
+#include <numeric>
 #include <vector>
 
 namespace lpq {
 
-template <typename PRECISION_TYPE> class NaiveQuantizer {
+class NaiveQuantizer {
 public:
-  LowPrecisionQuantizer() : _bit_width(8 * sizeof(PRECISION_TYPE)) {}
+  NaiveQuantizer();
 
-  std::vector<std::vector<PRECISION_TYPE>>
+  std::vector<std::vector<int_least8_t>>
   quantizeVectors(const std::vector<std::vector<float>> &vectors);
-
-  constexpr uint32_t getBitWidth() const { return _bit_width; }
-
-private:
-  uint32_t _bit_width;
 };
 } // namespace lpq

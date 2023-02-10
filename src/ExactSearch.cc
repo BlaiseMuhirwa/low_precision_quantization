@@ -37,6 +37,7 @@ ExactSearchIndex<PRECISION_TYPE>::search(
     distances[index] = std::move(top_k_distances);
     ids[index] = std::move(top_k_ids);
   }
+  std::cout << "[SEARCH-FINISHED]\n" << std::flush;
   return {distances, ids};
 }
 
@@ -126,5 +127,6 @@ template class ExactSearchIndex<float>;
 // Lower precision based indices constructed after quantization
 template class ExactSearchIndex<int_least8_t>;
 template class ExactSearchIndex<int_least16_t>;
+template class ExactSearchIndex<uint8_t>;
 
 } // namespace lpq::index

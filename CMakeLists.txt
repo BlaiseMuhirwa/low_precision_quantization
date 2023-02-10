@@ -57,7 +57,7 @@ endif(NOT OpenMP_FOUND)
 
 # Add compiler flags that should be used - Wall : enable all warnings - O3:
 # enable all optimizations
-set(CMAKE_CXX_FLAGS "-O3 -Wall")
+set(CMAKE_CXX_FLAGS "-O3 -W")
 
 # Specify the non-header source files that should be compiled
 file(GLOB CPP_SOURCE "${PROJECT_SOURCE_DIR}/src/*.cc"
@@ -68,16 +68,10 @@ include_directories(${PROJECT_SOURCE_DIR}/src)
 
 add_executable(main ${CPP_SOURCE})
 
-# set(LPQ_SOURCES
-#     ${PROJECT_SOURCE_DIR}/src/LPQ.cc)
-# add_library(_lpq STATIC ${LPQ_SOURCES})
-# set_target_properties(_lpq PROPERTIES POSITION_INDEPENDENT_CODE ON)
-
-# target_link_libraries(_lpq PUBLIC OpenMP::OpenMP_CXX)
-
 set(LPQ_SOURCES
     ${PROJECT_SOURCE_DIR}/src/LPQ.cc
-    ${PROJECT_SOURCE_DIR}/src/ExactSearch.cc)
+    ${PROJECT_SOURCE_DIR}/src/ExactSearch.cc
+    ${PROJECT_SOURCE_DIR}/src/NaiveQuantizer.cc)
 add_library(_lpq STATIC ${LPQ_SOURCES})
 set_target_properties(_lpq PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_link_libraries(_lpq PUBLIC OpenMP::OpenMP_CXX)
