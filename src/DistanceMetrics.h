@@ -32,8 +32,9 @@ euclideanDistance(const std::vector<PRECISION_TYPE> &first_vector,
  * norms of the input vectors
  */
 template <typename PRECISION_TYPE>
-static float angularDistance(const std::vector<PRECISION_TYPE> &first_vector,
-                             const std::vector<PRECISION_TYPE> &second_vector) {
+static float
+innerProductDistance(const std::vector<PRECISION_TYPE> &first_vector,
+                     const std::vector<PRECISION_TYPE> &second_vector) {
   float distance = 0.0;
   for (uint32_t i = 0; i < first_vector.size(); i++) {
     distance += first_vector[i] * second_vector[i];
@@ -57,11 +58,11 @@ static float computeDistance(const std::vector<PRECISION_TYPE> &first_vector,
   if (metric_to_lower == "euclidean") {
     return euclideanDistance(first_vector, second_vector);
   }
-  if (metric_to_lower == "angular") {
-    return angularDistance(first_vector, second_vector);
+  if (metric_to_lower == "angular" || metric_to_lower == "dot") {
+    return innerProductDistance(first_vector, second_vector);
   }
 
   throw std::invalid_argument("Invalid metric distance. Supported metric "
-                              "include 'euclidean' and 'angular'");
+                              "include 'euclidean' and 'angular' and 'dot'");
 }
 } // namespace lpq::index

@@ -58,7 +58,8 @@ ExactSearchIndex<PRECISION_TYPE>::getTopKClosestVectors(
    * pre-processing step which takes O(n logk);
    */
   std::vector<std::pair<float, uint32_t>> top_k_results;
-  if (_distance_metric == "angular") {
+  if (_distance_metric == "angular" || _distance_metric == "dot") {
+
     std::priority_queue<std::pair<float, uint32_t>,
                         std::vector<std::pair<float, uint32_t>>,
                         std::greater<std::pair<float, uint32_t>>>
@@ -104,7 +105,7 @@ ExactSearchIndex<PRECISION_TYPE>::getTopKClosestVectors(
     }
   }
 
-  if (_distance_metric == "angular") {
+  if (_distance_metric == "angular" || _distance_metric == "dot") {
     std::sort(top_k_results.begin(), top_k_results.end(),
               std::greater<std::pair<float, uint32_t>>());
   } else if (_distance_metric == "euclidean") {

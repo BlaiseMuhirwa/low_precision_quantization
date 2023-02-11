@@ -33,11 +33,11 @@ Keys Questions & Observations:
 
 DATASETS = [
     "sift-128-euclidean",
-    # "gist-960-euclidean",
-    # "mnist-784-euclidean",
-    # "glove-25-angular",
-    # "glove-100-angular",
-    # "nytimes-256-angular",
+    "gist-960-euclidean",
+    "mnist-784-euclidean",
+    "glove-25-angular",
+    "glove-100-angular",
+    "nytimes-256-angular",
     # "lastfm-64-dot",
     # "deep-image-96-angular",
 ]
@@ -45,14 +45,14 @@ DATASETS = [
 
 def get_exact_search_index(metric, quantize):
     """
-    distance_type will just be between inner product and euclidean
+    metric will just be between inner product and euclidean
     """
-    assert metric == "angular" or metric == "euclidean"
+    assert metric.lower() in ["angular", "euclidean", "dot"]
     if quantize:
-        idx = ExactSearchIndex(metric)
+        idx = ExactSearchIndex(metric.lower())
     else:
         # This searches for vectors in the floating point domain
-        idx = ExactSearchIndexF(metric)
+        idx = ExactSearchIndexF(metric.lower())
 
     return idx
 
@@ -69,14 +69,15 @@ def train_and_eval(
     test_run=True,
 ):
     if metric == "angular":
+        # We normalize for the 'angular' distance metric since the implementation
+        # uses inner product. And inner product is equivalent to angular similarity
+        # when the data is normalized
         train_set = train_set / np.linalg.norm(train_set, axis=1)[:, np.newaxis]
 
     if quantize:
-        print("Invoking Quantizer...")
         quantizer_ = LowPrecisionQuantizer()
         train_set = quantizer_.quantize_vectors(vectors=train_set)
         queries = quantizer_.quantize_vectors(vectors=queries)
-        print("Finished Quantizing")
 
     print(f"[EXPERIMENT]: {dataset_name}")
     start = time.time()
