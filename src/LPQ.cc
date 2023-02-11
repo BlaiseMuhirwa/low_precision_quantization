@@ -22,36 +22,39 @@ LowPrecisionQuantizer<PRECISION_TYPE>::quantizeVectors(
   if (vectors.size() == 0) {
     return {};
   }
-  std::vector<std::vector<PRECISION_TYPE>> quantized_vectors;
+
+  std::vector<std::vector<PRECISION_TYPE>> quantized_vectors(vectors.size());
 
   auto min_max_values = getMinMaxValues(/* dataset = */ vectors);
   assert(min_max_values.size() == vectors[0].size());
 
-  std::vector<std::tuple<float, PRECISION_TYPE>> quantization_params;
+  std::vector<std::tuple<float, PRECISION_TYPE>> quantization_parameters;
   for (auto [min, max] : min_max_values) {
-    quantization_params.emplace_back(
+    quantization_parameters.emplace_back(
         getQuantizationParams(/* min = */ min, /* max = */ max));
   }
 
 #pragma omp parallel for default(none)                                         \
-    shared(vectors, quantization_params, quantized_vectors)
+    shared(vectors, quantization_parameters, quantized_vectors)
   for (uint32_t vec_index = 0; vec_index < vectors.size(); vec_index++) {
 
-    std::vector<PRECISION_TYPE> quantized_vector;
+    std::vector<PRECISION_TYPE> quantized_vector(vectors[vec_index].size());
 #pragma omp critical
     {
       for (uint32_t dim_index = 0; dim_index < vectors[0].size(); dim_index++) {
-        auto [scale, zero_point] = quantization_params[dim_index];
+        auto [scale, zero_point] = quantization_parameters[dim_index];
+
         PRECISION_TYPE quantized_value =
             affine_quantize(/* value = */ vectors[vec_index][dim_index],
                             /* scale = */ scale, /* zero_point = */ zero_point);
-        quantized_vector.emplace_back(quantized_value);
+        quantized_vector[dim_index] = quantized_value;
       }
     }
-    quantized_vectors.emplace_back(std::move(quantized_vector));
+    quantized_vectors[vec_index] = std::move(quantized_vector);
   }
   return quantized_vectors;
 }
+
 template <typename PRECISION_TYPE>
 std::vector<std::tuple<float, float>>
 LowPrecisionQuantizer<PRECISION_TYPE>::getDatasetStatistics(

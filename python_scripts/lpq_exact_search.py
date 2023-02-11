@@ -33,13 +33,13 @@ Keys Questions & Observations:
 
 DATASETS = [
     "sift-128-euclidean",
-    "gist-960-euclidean",
-    "mnist-784-euclidean",
-    "glove-25-angular",
-    "glove-100-angular",
-    "nytimes-256-angular",
-    "lastfm-64-dot",
-    "deep-image-96-angular",
+    # "gist-960-euclidean",
+    # "mnist-784-euclidean",
+    # "glove-25-angular",
+    # "glove-100-angular",
+    # "nytimes-256-angular",
+    # "lastfm-64-dot",
+    # "deep-image-96-angular",
 ]
 
 
@@ -66,15 +66,17 @@ def train_and_eval(
     metric,
     top_k=100,
     quantize=False,
-    test_run=False,
+    test_run=True,
 ):
     if metric == "angular":
         train_set = train_set / np.linalg.norm(train_set, axis=1)[:, np.newaxis]
 
     if quantize:
+        print("Invoking Quantizer...")
         quantizer_ = LowPrecisionQuantizer()
         train_set = quantizer_.quantize_vectors(vectors=train_set)
         queries = quantizer_.quantize_vectors(vectors=queries)
+        print("Finished Quantizing")
 
     print(f"[EXPERIMENT]: {dataset_name}")
     start = time.time()
@@ -119,9 +121,9 @@ def run_experiment(
     distance_metric,
     quantize,
 ):
-    set_tracking_uri(uri=mlflow_uri)
+    # set_tracking_uri(uri=mlflow_uri)
 
-    mlflow.set_experiment("Low Precision Quantization")
+    # mlflow.set_experiment("Low Precision Quantization")
 
     train_and_eval(
         idx=index,
@@ -133,7 +135,7 @@ def run_experiment(
         quantize=quantize,
     )
 
-    mlflow.end_run()
+    # mlflow.end_run()
 
 
 if __name__ == "__main__":
@@ -159,7 +161,7 @@ if __name__ == "__main__":
 
         idx = get_exact_search_index(metric=distance_metric, quantize=True)
         run_experiment(
-            idx=idx,
+            index=idx,
             dataset_name=dataset,
             train_set=train_set,
             queries=queries,
